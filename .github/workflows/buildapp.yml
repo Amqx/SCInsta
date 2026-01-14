@@ -80,6 +80,7 @@ jobs:
                 
               env:
                 THEOS: ${{ github.workspace }}/theos
+                GH_TOKEN: ${{ github.token }}
 
             - name: Get SCInsta Version
               id: scinsta_version
