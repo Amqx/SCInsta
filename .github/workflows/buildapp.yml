@@ -8,11 +8,6 @@ name: Build and Package SCInsta
 on:
     workflow_dispatch:
         inputs:
-            decrypted_instagram_url:
-                description: "The direct URL to the decrypted Instagram IPA"
-                default: ""
-                required: true
-                type: string
             upload_artifact:
                 description: "Upload Artifact"
                 default: true
@@ -76,13 +71,16 @@ jobs:
                 cd main
 
                 mkdir -p packages
-                wget "$Instagram_URL" --no-verbose -O packages/com.burbn.instagram.ipa
+                LATEST_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+                echo "Latest release tag: $LATEST_TAG"
+                gh release download "$LATEST_TAG" --repo "$GITHUB_REPOSITORY" --pattern "*.ipa" --dir packages
+                mv packages/*.ipa packages/com.burbn.instagram.ipa
 
                 ls -la packages
                 
               env:
                 THEOS: ${{ github.workspace }}/theos
-                Instagram_URL: ${{ inputs.decrypted_instagram_url }}
+                GH_TOKEN: ${{ github.token }}
 
             - name: Get SCInsta Version
               id: scinsta_version
@@ -125,14 +123,3 @@ jobs:
                 name: SCInsta_sideloaded_v${{ steps.scinsta_version.outputs.version }}
                 path: ${{ github.workspace }}/main/packages/${{ steps.package_name.outputs.package }}
                 if-no-files-found: error
-
-            - name: Create Release
-              uses: softprops/action-gh-release@v2.0.6
-              with:
-                name: SCInsta_sideloaded_v${{ steps.scinsta_version.outputs.version }}
-                files: ${{ github.workspace }}/main/packages/SCInsta_sideloaded_v*.ipa
-                draft: true
-
-            - name: Output Release URL
-              run: |
-                echo "::notice::Release available at: https://github.com/${{ github.repository }}/releases"
